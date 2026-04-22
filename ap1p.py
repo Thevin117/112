@@ -4,20 +4,40 @@ from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Pull the single URL from your Streamlit Secrets
-DB_URL = st.secrets["URL"]
+# 1. DATABASE CONNECTION
+# This pulls the full connection string from your Streamlit Secrets box
+try:
+    DB_URL = st.secrets["URL"]
+    engine = create_engine(DB_URL)
+except Exception as e:
+    st.error(f"Error connecting to database: {e}")
 
-# Define DB_USER just in case your code uses it later for display or logging
-# This prevents the "not defined" error
-DB_USER = "postgres.mtrqxugtejtzoseacfvk" 
-
-engine = create_engine(DB_URL)
-
+# 2. PAGE CONFIGURATION
 st.set_page_config(
     page_title="Manufacturing Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# 3. FIXED DATA LOADING FUNCTION
+# This function no longer uses DB_USER or DB_PASSWORD
+@st.cache_data(ttl=600)
+def load_data() -> pd.DataFrame:
+    # Use the table name exactly as it appears in your Supabase DB
+    query = "SELECT * FROM production_logs" 
+    try:
+        # We use the 'engine' object created above
+        with engine.connect() as conn:
+            df = pd.read_sql(text(query), conn)
+        return df
+    except Exception as e:
+        st.error(f"Error loading dashboard data: {e}")
+        return pd.DataFrame()
+
+# 4. GET DATA
+df = load_data()
+
+# Your dashboard logic (charts, filters, etc.) starts here...
 
 # ---------- THEME ----------
 BG = "#0B1220"
