@@ -5,46 +5,51 @@ import plotly.express as px
 import plotly.graph_objects as go
 import urllib.parse
 
-# 1. DEFINE EVERYTHING ONE BY ONE FROM SECRETS
-# This ensures "NameError: DB_USER is not defined" never happens again
+# 1. Force the connection variables from Secrets
 try:
-    DB_HOST = st.secrets["DB_HOST"]
-    DB_PORT = st.secrets["DB_PORT"]
-    DB_NAME = st.secrets["DB_NAME"]
-    DB_USER = st.secrets["DB_USER"]
-    DB_PASSWORD = st.secrets["DB_PASSWORD"]
+    # We use .get() to avoid crashing if a secret is missing
+    host = st.secrets["DB_HOST"]
+    port = st.secrets["DB_PORT"]
+    dbname = st.secrets["DB_NAME"]
+    user = st.secrets["DB_USER"]  # This should be the full string with the ID
+    password = st.secrets["DB_PASSWORD"]
 
-    # Percent-encode the password to handle special characters safely
-    encoded_password = urllib.parse.quote_plus(DB_PASSWORD)
+    # Percent-encode the password (fixes @ or # symbols)
+    safe_password = urllib.parse.quote_plus(password)
 
-    # Build the connection string manually
-    conn_url = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # Manual connection string construction
+    conn_url = f"postgresql://{user}:{safe_password}@{host}:{port}/{dbname}"
     engine = create_engine(conn_url)
 except Exception as e:
-    st.error(f"Secret Missing Error: {e}")
+    st.error(f"Missing configuration in Secrets: {e}")
 
-# 2. PAGE CONFIG
-st.set_page_config(
-    page_title="Manufacturing Dashboard",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# 2. Page Setup
+st.set_page_config(page_title="Manufacturing Dashboard", layout="wide")
 
-# 3. FIXED DATA LOADING FUNCTION
+# 3. Data Loading
 @st.cache_data(ttl=600)
-def load_data() -> pd.DataFrame:
-    # Double check that 'production_logs' is the correct table name in Supabase
+def load_data():
+    # Make sure this table name 'production_logs' exists in your Supabase
     query = "SELECT * FROM production_logs" 
     try:
         with engine.connect() as conn:
             df = pd.read_sql(text(query), conn)
         return df
     except Exception as e:
-        st.error(f"Connection Error: {e}")
+        # If it fails, this will show you EXACTLY what username the app sent
+        st.error(f"Authentication failed for user: {user}")
+        st.error(f"Technical error: {e}")
         return pd.DataFrame()
 
-# 4. RUN
+# 4. Run the data pull
 df = load_data()
+
+# Show the data if successful
+if not df.empty:
+    st.success("Successfully connected to Supabase!")
+    st.dataframe(df)
+else:
+    st.warning("Dashboard is empty. Check the error message above.")
 # Your dashboard logic (charts, filters, etc.) starts here...
 
 # ---------- THEME ----------
