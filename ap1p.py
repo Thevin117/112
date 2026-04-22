@@ -5,16 +5,25 @@ import plotly.express as px
 import plotly.graph_objects as go
 import urllib.parse
 
-# 1. DATABASE CONNECTION
-# This uses the exact 'URL' key you have in your Streamlit Secrets box
+# 1. DEFINE EVERYTHING ONE BY ONE FROM SECRETS
+# This ensures "NameError: DB_USER is not defined" never happens again
 try:
-    # We pull the single URL you already saved in your secrets
-    DB_URL = st.secrets["URL"]
-    engine = create_engine(DB_URL)
-except Exception as e:
-    st.error(f"Error connecting to database: {e}")
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
-# 2. PAGE CONFIGURATION
+    # Percent-encode the password to handle special characters safely
+    encoded_password = urllib.parse.quote_plus(DB_PASSWORD)
+
+    # Build the connection string manually
+    conn_url = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    engine = create_engine(conn_url)
+except Exception as e:
+    st.error(f"Secret Missing Error: {e}")
+
+# 2. PAGE CONFIG
 st.set_page_config(
     page_title="Manufacturing Dashboard",
     layout="wide",
@@ -24,21 +33,18 @@ st.set_page_config(
 # 3. FIXED DATA LOADING FUNCTION
 @st.cache_data(ttl=600)
 def load_data() -> pd.DataFrame:
-    # IMPORTANT: Ensure 'production_logs' is the correct table name in your Supabase
+    # Double check that 'production_logs' is the correct table name in Supabase
     query = "SELECT * FROM production_logs" 
     try:
-        # We use the 'engine' object directly to avoid 'not defined' errors
         with engine.connect() as conn:
             df = pd.read_sql(text(query), conn)
         return df
     except Exception as e:
-        # This catch prevents the dashboard from crashing if the connection fails
-        st.error(f"Error loading dashboard data: {e}")
+        st.error(f"Connection Error: {e}")
         return pd.DataFrame()
 
-# 4. GET DATA
+# 4. RUN
 df = load_data()
-
 # Your dashboard logic (charts, filters, etc.) starts here...
 
 # ---------- THEME ----------
