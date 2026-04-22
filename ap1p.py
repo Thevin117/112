@@ -4,22 +4,19 @@ from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Streamlit Cloud pulls the entire connection string from your Secrets dashboard
-# Make sure your secret is named 'URL' (all caps)
+# Pull the single URL from your Streamlit Secrets
 DB_URL = st.secrets["URL"]
 
-# Create the engine directly from that URL
+# Define DB_USER just in case your code uses it later for display or logging
+# This prevents the "not defined" error
+DB_USER = "postgres.mtrqxugtejtzoseacfvk" 
+
 engine = create_engine(DB_URL)
 
 st.set_page_config(
     page_title="Manufacturing Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
-)
-st.set_page_config(
-    page_title="Manufacturing Dashboard",
-    layout="wide",
-    initial_sidebar_state="expanded",
 )
 
 # ---------- THEME ----------
