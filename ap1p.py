@@ -1,19 +1,21 @@
-import os
-from dotenv import load_dotenv
-import pandas as pd
 import streamlit as st
+import pandas as pd
 from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
 
-load_dotenv()
+# Streamlit Cloud pulls the entire connection string from your Secrets dashboard
+# Make sure your secret is named 'URL' (all caps)
+DB_URL = st.secrets["URL"]
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "postgres")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+# Create the engine directly from that URL
+engine = create_engine(DB_URL)
 
+st.set_page_config(
+    page_title="Manufacturing Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 st.set_page_config(
     page_title="Manufacturing Dashboard",
     layout="wide",
