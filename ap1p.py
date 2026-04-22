@@ -3,10 +3,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 import plotly.express as px
 import plotly.graph_objects as go
+import urllib.parse
 
 # 1. DATABASE CONNECTION
-# This pulls the full connection string from your Streamlit Secrets box
+# This uses the exact 'URL' key you have in your Streamlit Secrets box
 try:
+    # We pull the single URL you already saved in your secrets
     DB_URL = st.secrets["URL"]
     engine = create_engine(DB_URL)
 except Exception as e:
@@ -20,17 +22,17 @@ st.set_page_config(
 )
 
 # 3. FIXED DATA LOADING FUNCTION
-# This function no longer uses DB_USER or DB_PASSWORD
 @st.cache_data(ttl=600)
 def load_data() -> pd.DataFrame:
-    # Use the table name exactly as it appears in your Supabase DB
+    # IMPORTANT: Ensure 'production_logs' is the correct table name in your Supabase
     query = "SELECT * FROM production_logs" 
     try:
-        # We use the 'engine' object created above
+        # We use the 'engine' object directly to avoid 'not defined' errors
         with engine.connect() as conn:
             df = pd.read_sql(text(query), conn)
         return df
     except Exception as e:
+        # This catch prevents the dashboard from crashing if the connection fails
         st.error(f"Error loading dashboard data: {e}")
         return pd.DataFrame()
 
